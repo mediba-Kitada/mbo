@@ -1,0 +1,2 @@
+# mbo
+Management By Objective
