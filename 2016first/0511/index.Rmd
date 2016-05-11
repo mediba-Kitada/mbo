@@ -23,7 +23,9 @@ output:
 - [R言語](https://ja.wikipedia.org/wiki/R%E8%A8%80%E8%AA%9E)
 	- rmarkdown
 	- dygraphs
-    - DT
+	- DT
+	- DiagrammeR
+- [RStudio](https://www.rstudio.com/)
 - [pandoc](http://sky-y.github.io/site-pandoc-jp/users-guide/)
 
 ## Install
