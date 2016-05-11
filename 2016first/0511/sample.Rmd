@@ -1,0 +1,95 @@
+---
+title: "Slidyスライド"
+author: "@kohske"
+output:
+  slidy_presentation:
+    footer: "Copyright (c) 2015, @kohske"
+---
+
+# セクション見出し
+
+## ページ見出し
+
+インクリメンタルリスト＆２段組
+
+
+> - 食べる
+> - 飲む
+> - 太る
+
+## コードを入れる
+
+こういうコードを書きました。
+
+```{r eval=FALSE}
+library(dplyr)
+installed.packages() %>% 
+  rownames() %>% 
+  sapply(packageDescription, fields = "Author") %>% 
+  grepl("Hadley", .) %>% 
+  mean() %>% 
+  paste0("Your Hadley-index is ", .)
+```
+
+チェーン、チェーン！！
+
+## グラフ!!
+
+せっかくなので、[`dygraphs`](http://dygraphs.com/)!!
+
+```{r echo=FALSE}
+library(dygraphs)
+lungDeaths <- cbind(mdeaths, fdeaths)
+
+dygraph(lungDeaths) %>%
+  dySeries("mdeaths", label = "Male") %>%
+  dySeries("fdeaths", label = "Female") %>%
+  dyOptions(stackedGraph = TRUE) %>%
+  dyRangeSelector(height = 20)
+```
+  
+
+## テーブル
+
+きれいな表を出力してくれます。
+
+```{r echo=FALSE}
+knitr::kable(head(mtcars))
+```
+
+## javascriptテーブル
+
+せっかくなので、[`DataTables`](https://www.datatables.net/)!!
+
+```{r echo=FALSE}
+library(DT)
+datatable(mtcars, list(pageLength = 8))
+```
+
+## ダイアグラム!!
+
+飲み過ぎ注意!!
+
+```{r echo=FALSE}
+library(DiagrammeR)
+grViz('
+digraph {
+  rankdir=LR
+  node [shape = box,
+        style = rounded,
+        fontname = Helvetica]
+
+  太る [shape = egg]
+  食べる -> 飲む
+  飲む -> 飲む
+  飲む -> 酔う
+  飲む -> 寝る
+  酔う -> 太る
+  寝る -> 太る
+}
+')
+```
+
+## 終わりに
+
+Enjoy!!
