@@ -1,0 +1,102 @@
+---
+title: "R Markdownでバージョン管理可能なスライド作成"
+author: '@mediba-kitada'
+date: "2016年5月11日"
+output:
+  slidy_presentation:
+    footer: "Copyright (c) 2016, @mediba-kitada"
+---
+
+## 解決したい問題と欲求
+
+- LT等でスライドを作成する機会は増えたが、パワポとかKeynoteとかWEBサービスとか管理しづらい
+	- レビュー可能なスライドを作成したい
+	- エンジニアの目線で簡単で共有できるスライドを作成したい
+	- バージョン管理可能なスライドを作成したい
+- パワポ無理ポ
+	- 使い慣れたエディタでスライドを作成したい
+		- vimとか
+	- Markdownでスライドを作成したい
+
+## 利用するツール
+
+- [R言語](https://ja.wikipedia.org/wiki/R%E8%A8%80%E8%AA%9E)
+	- rmarkdown
+	- dygraphs
+    - DT
+- [pandoc](http://sky-y.github.io/site-pandoc-jp/users-guide/)
+
+## Install
+
+- Macオンリー
+
+## 下準備
+
+- homebrewのupdate
+
+```
+$ brew doctor
+# 問題を指摘されるようであれば全て対応する
+# brew update
+```
+
+## Rの導入
+
+```zsh
+$ brew tap homebrew/science
+$ brew install R
+$ brew install Caskroom/cask/rstudio
+```
+
+### rmarkdownパッケージの導入
+
+```
+$ R
+> install.packages("stringi")
+# CRANの配信ディストリビューションを13(Japan)に設定
+13
+> install.packages("rmarkdown", dependencies = TRUE)
+> install.packages("dygraphs", dependencies = TRUE)
+> install.packages("DT", dependencies = TRUE)
+> install.packages("DiagrammeR", dependencies = TRUE)
+```
+
+## pandocの導入
+
+```
+$ brew install pandoc
+```
+
+## インストール確認
+
+```
+$ R
+> library(rmarkdown)
+> pandoc_available()
+[1] TRUE
+```
+
+## Usage
+
+- [HTML Slidy](https://www.w3.org/Talks/Tools/Slidy2/#(1))に変換
+
+```
+$ R
+# パッケージの読み込み
+> library(rmarkdown)
+# 作業フォルダを変更
+> setwd("/path/to/stress-php7/rmarkdown/src") 
+# 変換!!
+> render("index.Rmd") 
+# ブラウザで開く
+> browseURL("index.html") 
+```
+
+## 今後
+
+- R言語と仲良くなりたい
+- 社内外でスライドを共有したい
+
+## 参考
+
+- [R Markdownで楽々レポートづくり](http://gihyo.jp/admin/serial/01/r-markdown)
