@@ -1,4 +1,4 @@
-# vimでgoする
+# VimでGoする
 
 メディアシステム開発部の北田です。
 auスマートパスのサーバサイド開発を担当しております。
@@ -31,6 +31,10 @@ auスマートパスのサーバサイド開発を担当しております。
     - [neocomplete](https://github.com/Shougo/neocomplete.vim)
 
 ### サポートする環境
+
+- Mac(OS X)オンリーです。以下のバージョンをサポートしています。
+    - Yosemite
+    - El Capitan
 
 - 以下のVimをサポートしています。
 
@@ -94,28 +98,7 @@ vim-goの    :GoFmt    コマンドでフォーマットされていることが
 
 ### ツール群のインストール
 
-vim-goは/、    :GoInstallBinaries    コマンドを用いてGo言語での開発に便利なツール群をインストールしてくれます。ただし、インストールパスの解決には、    $GOPATH/bin    又は    $GOBIN    が参照されます。この際、問題になるのは    $GOPATH    を用いたパスの解決です。envdirは、    $GOPATH    問題をカジュアルに解決することが出来ますが、パッケージが混在する問題が生じます。
-
-    # プロジェクト固有のパッケージ  
-    $ tree ./  
-    └── src  
-        ├── animals  
-        │   ├── elephant.go  
-        │   └── monkey.go  
-        └── main  
-            └── main.go  
-    # vim-go等で利用する共有するパッケージ(srcディレクトリの一部を抜粋)  
-    $ tree $GOPATH/src  
-    ├── github.com  
-    │   ├── alecthomas  
-    │   │   ├── gometalinter  
-    │   │   │   ├── CONTRIBUTING.md  
-    │   │   │   ├── COPYING  
-    │   │   │   ├── README.md  
-    │   │   │   ├── main.go  
-    │   │   │   └── regressiontests  
-
-この問題に対処するためにシンプルにshellの設定ファイルを用いて共通のGo言語環境を用意してしまいましょう。
+vim-goは、    :GoInstallBinaries    コマンドを用いてGo言語での開発に便利なツール群をインストールしてくれます。プロジェクトで開発するパッケージとvim-goで利用するパッケージの混同(同一ディレクトリに配置される)を避けるため、shellで環境変数GOPATHを利用して、インストールしていきましょう。
 
     # 共有のGo言語環境の各ディレクトリを作成  
     $ mkdir -p {$HOME/go,$HOME/go/bin,$HOME/go/pkg,$HOME/go/src}  
@@ -131,7 +114,7 @@ vim-goは/、    :GoInstallBinaries    コマンドを用いてGo言語での開
     # shellの設定を更新  
     $ source $HOME/.zshrc  
 
-次に    :GoInstallBinaries    コマンドでツール群をshellの設定ファイルで指定したパスにインストールします。
+Vimを起動し、    :GoInstallBinaries    コマンドでツール群をshellの設定ファイルで指定したパスにインストールします。
 
     # プロジェクトのルートディレクトリ(.envrcが格納されているディレクトリ)から離れる  
     $ cd $HOME  
@@ -204,7 +187,7 @@ vim-goの    :GoImports    コマンドでfmtパッケージがインポート�
     $ vi src/animals/elephant.go  
     
     " テストの実行  
-    <Leader>gt  
+    \<Leader\>gt  
 
 [![go test](https://i.gyazo.com/f75ff620de8ff02e59fddc031d5b0afe.gif)](https://gyazo.com/f75ff620de8ff02e59fddc031d5b0afe)
 
