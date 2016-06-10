@@ -23,6 +23,13 @@
 ### Xcode
 
 - App StoreからDL、インストール
+- Command Line Tool for Xcodeをインストール
+
+```bash
+$ xcode-select --install
+$ sudo xcrun cc
+agree
+```
 
 ### システム環境設定
 
@@ -52,6 +59,50 @@
 - 起動済みのアプリケーションにインジケータを表示
     - チェックを外す
 
+#### キーボード
+
+- キーボード
+    - F1,F2などのすべてのキーを標準のファンクションキーとして使用
+- ショートカット
+    - Spotlight
+        - Spotlight検索を表示
+            Option + Space
+        - Finderの検索ウィンドウを表示
+            Controll + Option + Space
+    - 入力ソース
+        - 前の入力ソースを選択
+            - チェックを外す
+        - 入力メニューの次のソースを選択
+            - チェックを外す
+### terminal
+
+- 一般
+    - Pro
+- プロファイル
+    - Proを選択
+    - テキスト
+        - テキスト
+            - テキストをアンチエイリアス処理
+            - 点滅テキストの使用を許可
+            - ANSIカラーを表示
+        - カーソル
+            - ブロック
+                - チェックを入れる
+            - 点滅カーソル
+                - チェックを入れる
+    - ウィンドウ
+        - ウィンドウサイズ
+            - 列
+                - 210
+            - 行
+                - 60
+    - シェル
+        - コマンドを実行
+            - チェックを入れる
+            - tmux を指定
+        - シェルの終了時
+            - シェルが正常に終了した場合は閉じる
+
 ### Google Chrome
 
 - [Share Extensions](https://chrome.google.com/webstore/detail/share-extensions/chdafcbnfkfenoeejpaeenpdamhmalhe)でExtensions一覧をエクスポート
@@ -69,6 +120,11 @@ $ ssh-keygen -t rsa -C kitada@mediba.jp
 
 - Chromeを起動し、アプリケーションをDL
     https://pqrs.org/osx/karabiner/index.html.ja
+- システム環境設定
+    - セキュリティとプライバシー
+        - プライバシー
+            - Karabinerのパスを指定し、制御を許可する
+            - Karabiner_AZNotfilterを指定し、制御を許可する
 
 - 既存Macで設定をexport
 
@@ -76,6 +132,7 @@ $ ssh-keygen -t rsa -C kitada@mediba.jp
 $ /Applications/Karabiner.app/Contents/Library/bin/karabiner export > ~/dotfiles/karabiner.sh
 ```
 
+- KarabinerをGUIで開く
 - 移行先Macに設定をimport
 
 ```
@@ -84,11 +141,20 @@ $ ~/dotfiles/karabiner.sh
 
 ### google日本語入力
 
-https://tools.google.com/dlpage/japaneseinput/eula.html?platform=mac&hl=ja
+- https://tools.google.com/dlpage/japaneseinput/eula.html?platform=mac&hl=ja
+- システム環境設定
+    - キーボード
+        - 入力ソース
+            - ひらがな(Google)
+            - 英数(Google)
 
 ### shifit
 
-http://shift-it.en.softonic.com/mac
+- http://shift-it.en.softonic.com/mac
+- システム環境設定
+    - セキュリティとプライバシー
+        - プライバシー
+            - shiftitのパスを指定し、制御を許可する
 
 ### homebrew
 
