@@ -106,7 +106,11 @@ agree
 ### Google Chrome
 
 - [Share Extensions](https://chrome.google.com/webstore/detail/share-extensions/chdafcbnfkfenoeejpaeenpdamhmalhe)でExtensions一覧をエクスポート
+- ブックマークをHTMLファイルで出力、pandocでmarkdownファイルに変換
 - safariを起動して手動でインストール
+- chromeをデフォルトのブラウザに設定
+- エクスポートしたmarkdownファイルをプレビューモードで開き、Extensionsをインストールしていく
+- markdownファイルをHTMLに変換し、インポート
 
 ### SSH
 
@@ -115,6 +119,15 @@ $ ssh-keygen -t rsa -C kitada@mediba.jp
 ```
 
 - 公開鍵をgithubとかbitbucketに登録する
+
+### dotfiles
+
+- cloneしておく
+
+```bash
+$ cd $HOME
+$ git clone git@github.com:mediba-Kitada/dotfiles.git
+```
 
 ### Karabiner
 
@@ -160,21 +173,128 @@ $ ~/dotfiles/karabiner.sh
 
 ```bash
 $ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+# brionacのインストール
 $ brew tap b4b4r07/brionac
 $ brew install brionac
+# 各CLIアプリケーションをインストール
+$ cd $HOME/dotfiles
+$ brionac a
 ```
 
-### CLI
+### zsh
 
-- homebrew
-    - brionac
-- dotfiles
+```bash
+# ログインシェルをzshに変更
+$ chsh -s /bin/zsh
 
-### GUI
+$ cd $HOME/dotfiles
+$ sh install.sh
+$ source .zshrc
+```
 
-- GUIなアプリは、手動でインストール
-- shift
-- google日本語入力
-- Chrome
-- Karabina
+### powerline
 
+前述の ```dotfiles/install.sh``` でインストールを実施しているが動作していないので、手動で実行
+
+```zsh
+# pipのインストール
+$ anyenv install pyenv && source ~/.zshrc
+$ pip install --upgrade pip
+# powerline-statusのインストール
+$ pip install --user powerline-status
+# powerline用フォントをインストール
+$ cd $HOME/dotfiles
+$ sh fonts/install.sh
+```
+
+- terminalのフォントを変更
+    - プロファイル
+        - Proを選択
+        - テキスト
+            - フォント
+                - DejaVu Sans Mono for Powerline 
+                - 13pt
+
+### vim
+
+前述の ```brionac a``` でvimをluajitでインストールしているが、luaがサポートされないので、手動で対応
+
+```zsh
+$ brew uninstall vim
+$ brew reinstall vim --with-lua
+$ vi --version|grep +lua
+```
+
+#### vim-go
+
+```
+$ cd $HOME
+$ vi
+:GoInstallBinaries
+```
+
+### ruby
+
+前述の ```dotfiles/install.sh``` でインストールを実施しているが動作していないので、手動で実行
+
+```zsh
+# rbenvのインストール
+$ anyenv install rbenv && source ~/.zshrc
+$ rbenv install 2.2.3
+$ rbenv exec bundle exec bitclust setup
+# バージョンを固定
+$ rbenv global $RUBY_VERSION
+```
+
+### VirtualBox
+
+- https://www.virtualbox.org/ 
+- pkgファイrを解答してくれないので、CLI
+
+```zsh
+$ sudo installer -package /Volumes/VirtualBox/VirtualBox.pkg -target /
+$ source ~/.zshrc
+```
+
+### Vagrant
+
+- https://www.vagrantup.com/
+- pkgファイルを解凍ししてくれないので、CLI
+
+```zsh
+$ sudo installer -package /Volumes/Vagrant/Vagrant.pkg -target /
+$ source ~/.zshrc
+```
+
+### AWS
+
+- 以下のファイルを移植
+
+```
+$HOME/.aws/credentials
+$HOME/.ssh/config
+```
+
+- Opsworksを利用している場合は、SSH公開鍵を更新する
+
+### 複合機
+
+- ドライバのDL及びインストール
+	- http://www.konicaminolta.jp/business/download/copiers/bizhub_c554_c454/ps/detail_mac_osx109.html
+- システム環境設定での操作
+	- プリントとスキャン >> プリンタの追加 >> IP
+	- アドレス：IPアドレスを入力（複合機2は192.168.3.246）
+	- プロトコル：LPDを選択 （※IPPを選択したら印刷できませんでした）
+	- ドライバ：「KONICA MINOLTA C554 PS」を選択
+- 給紙ユニット：なし
+- 廃紙ユニット：なし
+- パンチキット：なし
+- ハードディスク：チェックあり
+- セキュリティ印刷のみ許可：チェックあり
+- パブリックユーザーを許可：チェックなし
+- 部門管理
+	- 部門名:ブランク
+	- パスワード:0500
+- セキュリティ印刷
+	- ID:社員番号
+	- パスワード:適当
