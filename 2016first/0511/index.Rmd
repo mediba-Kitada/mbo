@@ -56,7 +56,7 @@ $ brew install Caskroom/cask/rstudio
 $ R
 > install.packages("stringi")
 # CRANの配信ディストリビューションを13(Japan)に設定
-13
+28
 > install.packages("rmarkdown", dependencies = TRUE)
 > install.packages("dygraphs", dependencies = TRUE)
 > install.packages("DT", dependencies = TRUE)
