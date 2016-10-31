@@ -175,17 +175,139 @@ opts_knit$set(global.par = TRUE)
 
 - 開発チームにメンバー追加。ローカル環境構築をお願いします!
 	- んー、無いのよメンゴメンゴ。DEV環境見てくれる？
-	- → README読んで。Docker for Macが要るから。あるいは。
+	- __→ README読んで。話はそれから。Docker for Macが要るから。travis gemも。あるいは。__
 - 開発完了。DEV環境にデプロイするで!
 	- sshでログイン、git fetch,checkout,pullして...
-	- → developmentブランチにPull Requestを投げて、コーヒーを飲む。ビルド完了の通知が来たら、ECSでサービス更新。やれやれ。
+	- __→ developmentブランチにPull Requestを投げて、コーヒーを飲む。ビルド完了の通知が来たら、ECSでサービス更新。やれやれ。__
 
 <div class="notes">
 - これらのツールを用いて、バックエンドのアプリケーションを移管していったわけですが、構成とインフラ、ワークフローがどう変更されたかをまとめました。
+  - ポイントは、いくつかございますが、単一障害点の除去というミッションとTwelve-Factor Appの実現のために、コンテナ化、マネージドサービスを利用出来るように改修していったところでしょうか。
 - 詳細は、このあとみていきますので、オーバービューとして頭の片隅に入れておいてください。
 </div>
 
 ## 設定
+
+> 設定を環境変数に格納する  
+> "The Twelve-Factor App - config" https://12factor.net/ja/config
+
+### コンテナに対する設定
+
+- CloudFormationのJSONフォーマットのテンプレートファイルを環境別に開発する
+	- ecs/production.json
+	- ecs/staging.json
+	- ecs/development.json
+
+```json
+"Environment": [
+  {
+    "Name": "APP_NAME",
+    "Value": "sample.jp"
+  },
+  {
+    "Name": "NGX_SERVERNAME",
+    "Value": "cms.sample.jp"
+  },
+  {
+    "Name": "NGX_DOCUMENTROOT",
+    "Value": "/home/webcontents/cms.sample.jp/public/www"
+  },
+  {
+    "Name": "NGX_S3_BUCKET_HOSTNAME",
+    "Value": "cdn.s3-ap-northeast-1.amazonaws.com"
+  },
+  {
+    "Name": "NGX_S3_RESOLVER",
+    "Value": "172.16.0.23"
+  }
+]
+```
+
+- Entrykitを用いて、コンテナ起動時に環境変数を基に各設定ファイルを生成する
+
+```Dockerfile
+# entryKitのインストール
+ENV ENTRYKIT_VERSION 0.4.0
+RUN apk add --no-cache --virtual .build-deps openssl \
+    && wget https://github.com/progrium/entrykit/releases/download/v${ENTRYKIT_VERSION}/entrykit_${ENTRYKIT_VERSION}_Linux_x86_64.tgz \
+    && tar -xvzf entrykit_${ENTRYKIT_VERSION}_Linux_x86_64.tgz \
+    && rm entrykit_${ENTRYKIT_VERSION}_Linux_x86_64.tgz \
+    && mv entrykit /bin/entrykit \
+    && chmod +x /bin/entrykit \
+    && entrykit --symlink \
+	&& apk del .build-deps
+
+# nginxのパラメータ
+ENV WORKER_PROCESSES=1 \
+    NGX_DOCUMENTROOT=/home/webcontents/cms.sample.jp/public/www \
+    NGX_SERVERNAME=cms.sample.jp \
+    NGX_S3_BUCKET_HOSTNAME=cdn.s3-ap-northeast-1.amazonaws.com \
+    NGX_S3_RESOLVER=172.16.0.23
+
+# 設定ファイルの配置
+ENV APP_NAME cms.sample.jp
+COPY ./nginx.conf.tmpl /etc/nginx/nginx.conf.tmpl
+COPY ./$APP_NAME.conf.tmpl /etc/nginx/conf.d/$APP_NAME.conf.tmpl
+
+ENTRYPOINT ["render", "/etc/nginx/nginx.conf", "/etc/nginx/conf.d/manage.mant.jp.conf", "--", "nginx", "-g", "daemon off;"]
+```
+
+- nginx設定ファイルのテンプレートファイル
+
+```
+server {
+
+  # ホスト名を、環境変数を用いてセット
+  server_name {{ var "NGX_SERVERNAME" | default "cms.sample.jp" }};
+  server_tokens off;
+
+  root {{ var "NGX_DOCUMENTROOT" |default "/home/webcontents/manage.mant.jp/public/www" }};
+  index index.php;
+
+# 中略
+
+  location ~ \.php$ {
+    fastcgi_pass php-fpm;
+    fastcgi_index index.php;
+    fastcgi_param SCRIPT_FILENAME $document_root/$fastcgi_script_name;
+    include fastcgi_params;
+    # 環境を指定
+    fastcgi_param APP_ENV {{ var "NGX_SERVERNAME" | default "cms.sample.jp" }};
+    fastcgi_param DB_HOST {{ var "NGX_DB_HOST" | default "rds.saple.jp" }};
+  }
+```
+
+### PHPアプリケーションに対する設定
+
+- エントリースクリプト(index.php)でFastCGIサーバに設定された環境変数を取得
+
+```php
+/**
+ * 環境変数から環境別の設定値を取得
+ */
+defined('APP_ENV') or define('APP_ENV', getenv('APP_ENV'));
+defined('DB_HOST') or define('DB_HOST', getenv('DB_HOST'));
+```
+
+<div class="notes">
+- この要素はシンプルですが、奥深いものです。設定ファイルをアプリケーションディレクトリには持たず、環境変数を用いて、設定していく必要がございます。
+- 我々は、大まかに2つの設定を施して行く必要がありました。
+	- ひとつは、コンテナを環境別(dev,stg,prd)に設定していくことです。
+		- ECSは、ECS agentを通して、Dockerデーモンを操作することが出来るので、Dockerの環境変数を環境別に設定する必要があります。
+		- これには、CloudFormationとEntrykitを用いました。
+		- CloudFormationは、JSONフォーマットのテンプレートファイルを用いて、AWSの各種リソースを用意出来る、configurationなプロダクトです。ECSにも対応しています。
+		- ちょっと無骨かもしれませんが、今回はテンプレートファイルを環境別に開発し、環境で異なる設定値をテンプレートファイルに埋め込みました。ECSのクラスタやサービス、タスクディフィニションを作成する際に、環境変数を設定しまおうという魂胆です。
+		- 次に、コンテナで稼働するアプリケーション(ミドルウェア)に環境変数を基に設定値を注入していくのですが、これが結構難儀でして。
+		- nginxには、環境変数の値を取得して、自身の設定値に出来る機能があるのですが、luaモジュールで提供されていたり、実装が冗長になったりと、使い勝手のいいものではありませんでした。
+		- そこでコンテナ起動時に、つまりOSがinitする際に環境変数の値を利用して、設定ファイルを生成出来たらいいなーとブラブラしていたら、Entrykitというgolang製のツールで実現出来ることを知りました。
+		- Dockerfileの実装を見てみると理解しやすいかと思います。
+		- 事前にテンプレートファイルを配置しておき、CMDでコンテナを起動する際に、設定ファイルをレンダリング、生成しているわけですね。シンプルで使い勝手がよいです。
+	- PHPアプリケーションに対する設定はシンプルです。
+		- nginxでfastcgi_paramとしてアプリケーションサーバ、この場合は、php-fpmが稼働しているコンテナに渡されます。
+		- あとは、PHPアプリケーションのエントリースクリプトでgetenvとかしてあげれば、設定ファイルをアプリケーションで持たずに、configすることが出来ます。
+- 無骨な印象がありますが、設定を環境変数に格納する という要素は以上の方法を持って達成することが出来ました。次の要素を見ていきましょう。
+</div>
+
 ## 開発/本番一致
 ## ログ
 ## ビルド、リリース、実行
