@@ -74,6 +74,7 @@ agree
             - チェックを外す
         - 入力メニューの次のソースを選択
             - チェックを外す
+
 ### terminal
 
 - 一般
@@ -168,6 +169,8 @@ $ ~/dotfiles/karabiner.sh
     - セキュリティとプライバシー
         - プライバシー
             - shiftitのパスを指定し、制御を許可する
+		- 一般
+			- すべてのアプリケーションを許可
 
 ### homebrew
 
@@ -200,6 +203,8 @@ $ source .zshrc
 # pipのインストール
 $ anyenv install pyenv && source ~/.zshrc
 $ pip install --upgrade pip
+# pipは標準pythonに付属しているはずだが、付属していない場合は手動でインストール
+$ curl -kL https://raw.github.com/pypa/pip/master/contrib/get-pip.py | python
 # powerline-statusのインストール
 $ pip install --user powerline-status
 # powerline用フォントをインストール
