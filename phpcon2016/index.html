@@ -24,18 +24,25 @@
 <div id="自己紹介" class="slide section level2">
 <h1>自己紹介</h1>
 <ul class="incremental">
-<li>エンジニアを募集しています</li>
+<li><a href="https://github.com/mediba-Kitada">mediba-kitada</a></li>
+<li>サーバサイドエンジニア</li>
+<li><a href="http://www.mediba.jp/recruit/career/engineer/">エンジニアを募集しています</a></li>
 </ul>
+
 </div>
 <div id="はじめに" class="slide section level2">
 <h1>はじめに</h1>
 <ul class="incremental">
-<li>とあるWEBサービスを他社から買収した</li>
+<li>とあるWEBサービスを他社から買収した
+<ul class="incremental">
 <li>契約やアカウント、コードベース含む事業の全てを譲り受けるプロジェクト</li>
+</ul></li>
 </ul>
+
 </div>
 <div id="タイムライン" class="slide section level2">
 <h1>タイムライン</h1>
+
 <ul class="incremental">
 <li>上司がサーバサイドの開発リーダーを募集していたのが今年の5月中旬</li>
 <li>事業譲渡完了予定日が6月1日</li>
@@ -55,22 +62,11 @@
 </ul>
 <h3 id="開発指針">開発指針</h3>
 <ul class="incremental">
-<li>Twelve-Factor Appにする</li>
+<li>収益に貢献するため、運用コストを削減する</li>
+<li>CMSアプリケーションをコンテナ化する</li>
+<li>上記の実現の過程で、Twelve-Factor Appにする</li>
 </ul>
-</div>
-<div id="いくつかの真実" class="slide section level2">
-<h1>いくつかの真実</h1>
-<ul class="incremental">
-<li>移管プロジェクトを通して実践したこと、気づいたことをお話します</li>
-</ul>
-</div>
-<div id="話さないこと" class="slide section level2">
-<h1>話さないこと</h1>
-<ul class="incremental">
-<li>単一障害点の除去</li>
-<li>チーム開発のあれこれ</li>
-<li>WEBアプリケーションの性能</li>
-</ul>
+
 </div>
 <div id="話すこと" class="slide section level2">
 <h1>話すこと</h1>
@@ -82,15 +78,101 @@
 <li>12の要素全てではない…!</li>
 </ul></li>
 </ul>
+
+</div>
+<div id="話さないこと" class="slide section level2">
+<h1>話さないこと</h1>
+<ul class="incremental">
+<li>単一障害点の除去</li>
+<li>チーム開発のあれこれ</li>
+<li>WEBアプリケーションの性能</li>
+</ul>
+
+</div>
+<div id="twelve-factor-app" class="slide section level2">
+<h1>Twelve-Factor App</h1>
+<ul class="incremental">
+<li><a href="https://12factor.net/ja/">本家</a></li>
+<li>3行で
+<ul class="incremental">
+<li>開発チームを最小のコストでビルドする</li>
+<li>移植性大事</li>
+<li>デプロイ大事</li>
+</ul></li>
+</ul>
+
 </div>
 <div id="いくつかのプロダクト" class="slide section level2">
 <h1>いくつかのプロダクト</h1>
 <ul class="incremental">
 <li>Docker</li>
+<li>Amazon Web Service
+<ul class="incremental">
+<li>CloudFormation</li>
 <li>Amazon EC2 Container Service</li>
+<li>Amazon CloudWatch Logs</li>
+</ul></li>
 <li>Entrykit</li>
 <li>TravisCI</li>
 </ul>
+
+</div>
+<div id="ビフォ--アフター" class="slide section level2">
+<h1>ビフォ-&gt; アフター</h1>
+<h3 id="構成">構成</h3>
+<ul class="incremental">
+<li>コンテナ化により各アプリケーションをインフラレイヤで隔離
+<ul class="incremental">
+<li>ホストサーバは、同居</li>
+</ul></li>
+<li>アプリケーションディレクトリを分割した
+<ul class="incremental">
+<li>sample.jp</li>
+<li>cms.sample.jp</li>
+<li>cron.sample.jp</li>
+</ul></li>
+</ul>
+<h3 id="インフラ">インフラ</h3>
+<table>
+<thead>
+<tr class="header">
+<th align="left">項目</th>
+<th align="left">移管前</th>
+<th align="left">移管後</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">構成管理</td>
+<td align="left">無し</td>
+<td align="left">Docker,CloudFormation</td>
+</tr>
+<tr class="even">
+<td align="left">デプロイ</td>
+<td align="left">無し</td>
+<td align="left">TravisCI,ECS</td>
+</tr>
+<tr class="odd">
+<td align="left">ログストレージ</td>
+<td align="left">無し</td>
+<td align="left">CloudWatch Logs</td>
+</tr>
+</tbody>
+</table>
+<h3 id="ワークフロー">ワークフロー</h3>
+<ul class="incremental">
+<li>開発チームにメンバー追加。ローカル環境構築をお願いします!
+<ul class="incremental">
+<li>んー、無いのよメンゴメンゴ。DEV環境見てくれる？</li>
+<li>→ README読んで。Docker for Macが要るから。あるいは。</li>
+</ul></li>
+<li>開発完了。DEV環境にデプロイするで!
+<ul class="incremental">
+<li>sshでログイン、git fetch,checkout,pullして…</li>
+<li>→ developmentブランチにPull Requestを投げて、コーヒーを飲む。ビルド完了の通知が来たら、ECSでサービス更新。やれやれ。</li>
+</ul></li>
+</ul>
+
 </div>
 <div id="設定" class="slide section level2">
 <h1>設定</h1>
@@ -103,9 +185,6 @@
 </div>
 <div id="ビルドリリース実行" class="slide section level2">
 <h1>ビルド、リリース、実行</h1>
-</div>
-<div id="サンプルアプリケーションの紹介" class="slide section level2">
-<h1>サンプルアプリケーションの紹介</h1>
 </div>
 <div id="終わりに" class="slide section level2">
 <h1>終わりに</h1>
