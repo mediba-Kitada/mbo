@@ -310,14 +310,123 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <span class="fu">defined</span><span class="ot">(</span><span class="st">'DB_HOST'</span><span class="ot">)</span> <span class="kw">or</span> <span class="fu">define</span><span class="ot">(</span><span class="st">'DB_HOST'</span><span class="ot">,</span> <span class="fu">getenv</span><span class="ot">(</span><span class="st">'DB_HOST'</span><span class="ot">));</span></code></pre></div>
 
 </div>
+<div id="ビルドリリース実行" class="slide section level2">
+<h1>ビルド、リリース、実行</h1>
+<blockquote>
+<p>ビルド、リリース、実行の3つのステージを厳密に分離する<br />
+“The Twelve-Factor App - build-release-run” <a href="https://12factor.net/ja/build-release-run" class="uri">https://12factor.net/ja/build-release-run</a></p>
+</blockquote>
+<ul class="incremental">
+<li><blockquote>
+<p>実行ステージにあるコードを変更してもその変更をビルドステージに伝える方法がないため、コードを実行中に変更することはあり得ない。</p>
+</blockquote></li>
+</ul>
+<h3 id="ビルド">ビルド</h3>
+<blockquote>
+<p>コードリポジトリを ビルド と呼ばれる実行可能な塊へと変える変換である。</p>
+</blockquote>
+<ul class="incremental">
+<li>Dockerfileの開発
+<ul class="incremental">
+<li>AlpineLinuxをベースにし、コンテナを軽量化</li>
+<li>構成管理も担う</li>
+</ul></li>
+</ul>
+<pre><code>% tree env
+env
+├── local
+│   ├── docker-compose.yml # ローカル開発環境構築
+│   ├── mysql-server # ローカルDB構築
+│   │   ├── Dockerfile # MySQL公式イメージを基に開発チームが担当するmysql-serverプロセスが稼働するコンテナ
+│   │   └── mant_sv_api.sql # プロダクト用テーブル作成,データ投入SQL
+│   └── mysql-test-server # ローカルUT用DB構築
+│       ├── Dockerfile # MySQL公式イメージを基に開発チームが担当するmysql-serverプロセスが稼働するコンテナ
+│       └── mant_test.sql # UT用テーブル作成,データ投入SQL
+├── nginx
+│   └── cms
+│       ├── manage.mant.jp.conf.tmpl # nginx MANT CMSアプリケーション設定ファイル
+│       ├── nginx.conf.tmpl # nginx基本設定ファイル
+│       └── Dockerfile # nginx公式イメージを基に開発チームが担当するnginxプロセスが稼働するコンテナ
+
+中略
+
+% tree cms.sample.jp
+cms.sample.jp
+├── Dockerfile # アプリケーションに関する設定値やアプリケーションの配置に関わる処理を記述</code></pre>
+<ul class="incremental">
+<li>ローカル環境のビルド
+<ul class="incremental">
+<li>Docker Composeでマルチコンテナをビルド</li>
+</ul></li>
+</ul>
+<pre><code>% docker-compose -f ./env/local/docker-compose.yml up</code></pre>
+<ul class="incremental">
+<li>リモート環境のビルド
+<ul class="incremental">
+<li>最新のアプリケーションを包含したコンテナをビルドする必要がある</li>
+<li>レジストリへのPUSHへ正直面倒</li>
+<li>TravisCI上で実行するコマンドをtravi.ymlとshell scriptで表現</li>
+<li>TravisCIで環境別に必要なコンテナをビルド、プライベートレジストリ(ECR)にPUShする</li>
+</ul></li>
+</ul>
+<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">env:</span>
+  <span class="fu">global:</span>
+    <span class="kw">-</span> <span class="fu">secure:</span> hoge
+    <span class="kw">-</span> <span class="fu">secure:</span> foo
+<span class="fu">sudo:</span> required
+<span class="fu">language:</span> bash
+<span class="fu">services:</span>
+<span class="kw">-</span> docker
+<span class="fu">install:</span>
+<span class="kw">-</span> echo <span class="st">&quot;install nothing&quot;</span>
+<span class="fu">script:</span>
+<span class="kw">-</span> echo <span class="st">&quot;no tests&quot;</span>
+<span class="fu">after_success:</span>
+<span class="kw">-</span> docker --version
+<span class="kw">-</span> pip install --user awscli
+<span class="kw">-</span> <span class="fu">export PATH=$PATH:</span>$HOME/.local/bin
+<span class="kw">-</span> eval $(aws ecr get-login --region ap-northeast-1)
+<span class="kw">-</span> if <span class="kw">[</span> $<span class="kw">{</span>TRAVIS_BRANCH<span class="kw">}</span> = <span class="st">&quot;master&quot;</span> <span class="kw">]</span>; then bash ./travis/build_production.sh; fi
+<span class="kw">-</span> if <span class="kw">[</span> $<span class="kw">{</span>TRAVIS_BRANCH<span class="kw">}</span> = <span class="st">&quot;staging&quot;</span> <span class="kw">]</span>; then bash ./travis/build_staging.sh; fi
+<span class="kw">-</span> if <span class="kw">[</span> $<span class="kw">{</span>TRAVIS_BRANCH<span class="kw">}</span> = <span class="st">&quot;development&quot;</span> <span class="kw">]</span>; then bash ./travis/build_development.sh; fi</code></pre></div>
+<h3 id="リリース">リリース</h3>
+<blockquote>
+<p>ビルドステージで生成されたビルドを受け取り、それをデプロイの現在の設定と結合する。</p>
+</blockquote>
+<ul class="incremental">
+<li>ECSの詳細は、割愛
+<ul class="incremental">
+<li><a href="http://www.slideshare.net/AmazonWebServicesJapan/aws-black-belt-online-seminar-2016-amazon-ec2-container-service">IWANAGA Ryosukeさんのスライド</a>をご確認下さい</li>
+</ul></li>
+<li>ECSのコンソールにて、タスク定義を実施、リビジョンを作成する
+<ul class="incremental">
+<li>環境変数もこのタイミングで設定出来る</li>
+<li>プライベートレジストリにPUSHされているコンテナのタグと環境変数をセットにする</li>
+<li>いつでもデプロイ可能な状態とする</li>
+</ul></li>
+</ul>
+<h3 id="実行">実行</h3>
+<blockquote>
+<p>、選択されたリリースに対して、アプリケーションのいくつかのプロセスを起動することで、アプリケーションを実行環境の中で実行する。</p>
+</blockquote>
+<ul class="incremental">
+<li>ECSのコンソールにて、タスク定義を基にサービスを更新
+<ul class="incremental">
+<li>プライベートレジストリからサービスに必要なコンテナ(タスク)がクラスタにPULLされる</li>
+<li>コンテナ起動時にEntrykitを用いて設定、実行環境が出来上がる</li>
+</ul></li>
+<li>ECSエージェントがタスク定義のリビジョンを用いて Blue/Green Deploy
+<ul class="incremental">
+<li>ダウンタイムゼロでデプロイされる</li>
+</ul></li>
+</ul>
+
+</div>
 <div id="開発本番一致" class="slide section level2">
 <h1>開発/本番一致</h1>
 </div>
 <div id="ログ" class="slide section level2">
 <h1>ログ</h1>
-</div>
-<div id="ビルドリリース実行" class="slide section level2">
-<h1>ビルド、リリース、実行</h1>
 </div>
 <div id="終わりに" class="slide section level2">
 <h1>終わりに</h1>
