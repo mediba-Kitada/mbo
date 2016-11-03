@@ -146,12 +146,11 @@ opts_knit$set(global.par = TRUE)
 - マルチコンテナを運用するとビルドをどの環境で実施するのかと思い悩むわけですが、弊社ではTravisCIを有償利用しておりますので、TravisCIにてリモートビルドを実施しております。詳細は、後述致します。
 </div>
 
-## ビフォ-> アフター
-
 ## 構成 ビフォ-> アフター
 
-- ![before-after](./assets/beforeafter.png)
-- コンテナ化により各アプリケーションをインフラレイヤで隔離
+![before-after](./assets/beforeafter.png)
+
+- コンテナ化により各アプリケーションをOS単位で隔離
 	- ホストサーバは、同居
 - アプリケーションディレクトリを分割した
 	- sample.jp
@@ -168,7 +167,7 @@ opts_knit$set(global.par = TRUE)
 
 ## ワークフロー ビフォ-> アフター
 
-- 開発チームにメンバー追加。ローカル環境構築をお願いします!
+- 開発チームにメンバー追加。まずは、ローカルでアプリを動かしたいっす。
 	- んー、無いのよメンゴメンゴ。DEV環境見てくれる？
 	- __→ README読んで。話はそれから。Docker for Macが要るから。travis gemも。あるいは。__
 - 開発完了。DEV環境にデプロイするで!
@@ -244,7 +243,7 @@ ENV APP_NAME cms.sample.jp
 COPY ./nginx.conf.tmpl /etc/nginx/nginx.conf.tmpl
 COPY ./$APP_NAME.conf.tmpl /etc/nginx/conf.d/$APP_NAME.conf.tmpl
 
-ENTRYPOINT ["render", "/etc/nginx/nginx.conf", "/etc/nginx/conf.d/manage.mant.jp.conf", "--", "nginx", "-g", "daemon off;"]
+ENTRYPOINT ["render", "/etc/nginx/nginx.conf", "/etc/nginx/conf.d/manage.sample.jp", "--", "nginx", "-g", "daemon off;"]
 ```
 
 - nginx設定ファイルのテンプレートファイル
@@ -256,7 +255,7 @@ server {
   server_name {{ var "NGX_SERVERNAME" | default "cms.sample.jp" }};
   server_tokens off;
 
-  root {{ var "NGX_DOCUMENTROOT" |default "/home/webcontents/manage.mant.jp/public/www" }};
+  root {{ var "NGX_DOCUMENTROOT" |default "/home/webcontents/manage.sample.jp/public/www" }};
   index index.php;
 
 # 中略
@@ -325,13 +324,13 @@ env
 │   ├── docker-compose.yml # ローカル開発環境構築
 │   ├── mysql-server # ローカルDB構築
 │   │   ├── Dockerfile # MySQL公式イメージを基に開発チームが担当するmysql-serverプロセスが稼働するコンテナ
-│   │   └── mant_sv_api.sql # プロダクト用テーブル作成,データ投入SQL
+│   │   └── sample_sv_api.sql # プロダクト用テーブル作成,データ投入SQL
 │   └── mysql-test-server # ローカルUT用DB構築
 │       ├── Dockerfile # MySQL公式イメージを基に開発チームが担当するmysql-serverプロセスが稼働するコンテナ
-│       └── mant_test.sql # UT用テーブル作成,データ投入SQL
+│       └── sample_test.sql # UT用テーブル作成,データ投入SQL
 ├── nginx
 │   └── cms
-│  		├── manage.mant.jp.conf.tmpl # nginx MANT CMSアプリケーション設定ファイル
+│  		├── manage.sample.jp.conf.tmpl # nginx sample CMSアプリケーション設定ファイル
 │  		├── nginx.conf.tmpl # nginx基本設定ファイル
 │  		└── Dockerfile # nginx公式イメージを基に開発チームが担当するnginxプロセスが稼働するコンテナ
 
@@ -340,6 +339,47 @@ env
 % tree cms.sample.jp
 cms.sample.jp
 ├── Dockerfile # アプリケーションに関する設定値やアプリケーションの配置に関わる処理を記述
+```
+
+- php-fpmなコンテナ
+
+```
+# 公式イメージを利用
+## FastCGI版PHP 5.6.26
+## OS Alpine Linux
+FROM php:5.6.26-fpm-alpine
+
+# PHP拡張ライブラリのインストール
+ENV PECL_MEMCACHED_VER=2.2.0 \
+    PECL_UUID=1.0.4
+# mysqli
+RUN docker-php-ext-install mysqli \
+# その他のPECLパッケージ
+	&& set -xe \
+	&& apk add --no-cache --virtual .build-deps \
+          $PHPIZE_DEPS \
+          curl-dev \
+          gnupg \
+          libedit-dev \
+          libxml2-dev \
+          openssl-dev \
+          sqlite-dev
+# PECL memcached
+# libmemcached-dev 1.0.18-r1だと、pecl memcachedをコンパイル出来ないので、3.3のリポジトリを併用
+RUN echo "http://dl-cdn.alpinelinux.org/alpine/v3.3/main" >> /etc/apk/repositories \
+	&& apk add --no-cache libmemcached-dev=1.0.18-r0 zlib \
+    && docker-php-source extract \
+	&& cd /usr/src/php \
+	&& pecl download memcached-${PECL_MEMCACHED_VER} \
+	&& tar xzvf memcached-${PECL_MEMCACHED_VER}.tgz \
+	&& cd memcached-${PECL_MEMCACHED_VER}/ \
+	&& phpize \
+	&& ./configure --disable-memcached-sasl \
+	&& make \
+	&& make install \
+	&& cd .. \
+	&& docker-php-ext-enable memcached
+以下略
 ```
 
 - ローカル環境のビルド
@@ -391,12 +431,12 @@ after_success:
 
 ## 実行
 
-> 、選択されたリリースに対して、アプリケーションのいくつかのプロセスを起動することで、アプリケーションを実行環境の中で実行する。
+> 選択されたリリースに対して、アプリケーションのいくつかのプロセスを起動することで、アプリケーションを実行環境の中で実行する。
 
 - ECSのコンソールにて、タスク定義を基にサービスを更新
-	- プライベートレジストリからサービスに必要なコンテナ(タスク)がクラスタにPULLされる
-	- コンテナ起動時にEntrykitを用いて設定、実行環境が出来上がる
-- ECSエージェントがManagerとい連携し、Blue/Green Deploy
+	- プライベートレジストリからサービスに必要なコンテナイメージ(タスク)がクラスタにPULLされる
+	- コンテナ起動時にEntrykitを用いて設定(init)、実行環境が出来上がる
+- ECSエージェントがManagerと連携し、Blue/Green Deploy
 	- 2台のEC2インスタンスで片系稼働なコールドスタンバイを実現している
 		- 最小ヘルス率(Minimum Healthy Percent):100%
 		- 最大率(Maximum Percent):200%
@@ -458,7 +498,7 @@ after_success:
 
 - 実行環境をコンテナ型で仮想化
 	- ローカル、開発、ステージング、商用は同一のDockerfileでビルドされたイメージで稼働する
-- マネージドなプロダクトはどうしよう??
+- マネージドなサービスはどうしよう?
 	- 可能な限りコンテナにする
 	- [S3のコンテナに乗せてみた](https://github.com/tripleW/docker-s3rver/pull/2)
 - 開発チームも素早くビルドする
@@ -473,22 +513,127 @@ after_success:
 - その問題に対処すべく、あるプロジェクトではpackerとatlasを用いて、vagrant boxをバージョン管理するようにしました。しかし、ご存知方もいるかもしれませんが、atlasは、有償化に舵を切りました。privateは、vagrant boxは、ビジネスアカウントのみ扱う体系になりました。
 - アプリケーションの実行環境の移植性、ポータビリティを保つことは本当に難しいです。
 - 今回の移管プロジェクトは、構成管理ツールを導入していな状態でスタートしました。ポータビリティに散々悩んできた私にとっては、チャンスでもありました。ポータビリティゼロの状態でのスタートだったので、取りうる選択肢の中でもっともポータビリティが高い選択肢を選ぶことが出来るからです。
+- どの環境でもDockerが稼働しておりますので、開発チームはDockerfileを開発し、そのDockerfileでビルドされたイメージをECSを用いてデプロイしていけばいいわけです。このECS管理下のEC2インスタンスは、ECS Optimizedなるものでして、Dockerが稼働するために必要なミドルウェアのみがセットアップされています。
+- AWS等、プラットフォームが提供するマネージドなサービスは、ローカル環境ではどうあつかうべきでしょうか。
+	- これも可能な限りコンテナ化して、環境差異を極力無くします。
+	- 我々のケースでは、可用性を担保する上でS3が重要なサービスでしたので、S3のWebAPIをローカル環境で再現するコンテナを開発しました。といっても、オープンソースなプロダクトにカスタマイズしやすいようにPRを投げただけですが。
+- ポータビリティを向上されると、生産性が格段に上がります。チームをビルドするのに、つまり、メンバーをアサインするのに、半日程度で出来てしまいます。
+	- 我々のケースでは、チームで本格的に開発してから3日で既存バグを修正し、商用リリースを実施出来ました。
+- 次の要素を見ていきましょう。予定では次が最後の要素です。
 </div>
 
 ## ログ
 
-> ログをイベントストリームとして扱う
+> ログをイベントストリームとして扱う  
 > "The Twelve-Factor App - logs https://12factor.net/ja/logs
+
+- > アプリケーションはログファイルに書き込んだり管理しようとするべきではない。代わりに、それぞれの実行中のプロセスはイベントストリームをstdout（標準出力）にバッファリングせずに書きだす。ローカルでの開発中、開発者はこのストリームをターミナルのフォアグラウンドで見ることで、アプリケーションの挙動を観察する。
+
+## ローカル環境
+
+- 各コンテナ内のプロセスは、フォアグラウンドで稼働させ、ログを標準出力にストリーミングさせる
+- アプリケーションログは、フレームワークまたはlog4php等のロガーを用いて、標準出力させる
+
+```
+# log4phpパラメータシート
+# http://logging.apache.org/log4php/
+
+# ロガーの定義
+## 標準出力する
+log4php.rootLogger=DEBUG, stdout
+
+# アペンダ(appenders)定義
+## アプリケーションログ
+## AWS関連ログも(旧awsロガー)もここに出力
+log4php.appender.stdout = LoggerAppenderConsole
+log4php.appender.stdout.layout = LoggerLayoutPattern
+log4php.appender.stdout.layout.conversionPattern = "%d{ISO8601} [%p] %c: %m (at %F line %L)%n"
+
+
+# 出力例
+[06-Jul-2016 02:39:43] WARNING: [pool www] child 5 said into stdout: "2016-07-06 11:39:43,323 [DEBUG] Welcome sample: Hello,world!! (at /home/webcontents/sample.jp/application/bootstrap.php line 602)"
+```
+
+## awslogsロギングドライバ
+
+- CloudWatch Logs ロググループを作成
+	- ログの保持期間も設定可能
+
+```
+"BackendLogGroup": {
+  "Type": "AWS::Logs::LogGroup",
+  "Properties": {
+    "RetentionInDays": 7
+  }
+}
+```
+
+- ECSクラスタ作成時に[awslogsロギングドライバ](http://docs.docker.jp/engine/reference/logging/awslogs.html)を設定
+	- 出力先は、先に作成しておいたロググループを設定
+
+```
+"LogConfiguration": {
+  "LogDriver": "awslogs",
+  "Options": {
+    "awslogs-group": {
+      "Ref": "BackendLogGroup"
+    },
+    "awslogs-region": {
+      "Ref": "AWS::Region"
+    },
+    "awslogs-stream-prefix": "sample-cms-web-container"
+  }
+}
+```
+
+<div class="notes">
+- ログについて見ていきましょう。
+- イベントストリームって何やねんということなのですが、要はファイルをtail -fとかするのではなく、標準出力にストリームさせなさいよ、ログの永続化についてはアプリケーションで関知しなさんなよということです。
+- 具体的に見てきます。
+- まずローカル環境ですが、コンテナで稼働するプロセスはフォアグラウンドですので、コンテナが標準出力するログをみていけば問題無いです。
+- アプリケーションログは、ロガーを設定し、標準出力にストリームしましょう。
+	- 我々のケースではlog4phpを利用しておりましたので、パラメータシートに標準出力するように記述します。
+	- 大抵のフレームワークのロガーでも同様のことをが出来るはずです。
+- では、リモート環境はどのようにログをイベントストリームにするかというと...
+- Dockerが提供しているロギングドライバのひとつawslogsを利用しました。
+- CloudFormationでロググループを事前に作成しておき、ECSクラスタ作成時にロギングドライバと作成しておいたロググループをアタッチしてあげます。
+- 構築作業としては、シンプルですが、CloudWatch Logsのフィルタリング機能やアラーム機能が利用出来るので、とても便利です。
+- この要素はシンプルですが、アプリケーションの見通しよくするたに重要な要素となります。特に今回のような移管プロジェクトでは、アプリケーションが動いた(イベント)の結果をロギングして、ストリームしてくれますので、システムの把握とデバッグには、大いに役に立ちました。
+</div>
 
 ## 終わりに
 
-- アプリケーションをサービス化したらやりたいことは?
-	- 機能追加？
-	- リファクタリング？
-	- テストコード？
-	- 更なる自動化？ 
+- PHPアプリケーションをコンテナに乗せてTwelve-Factor appにした
+	- エンジニアとして学ぶことは多い
+	- リスクは低くないが、取り組むメリットは十分ある
+- 課題
+	- 運用の効率化
+	- 実行環境はステートレスだが、プロジェクトはステートフル
+		- [バックエンドサービスをアタッチされたリソースとして扱う](https://12factor.net/ja/backing-services)
+- Twelve Factor Appにした後にやりたいことは?
+	- 機能追加?
+	- リファクタリング?
+	- テストコード?
+	- 更なる自動化?
 - やりたいこと、やるべきことは限りなく湧き出てくる。優先順位を付けることが難しい面もある
 	- その際、重要となるのはチームで課題に取り組める環境とアプリケーションがあり、良心のあるエンジニアがいること
 	- 環境とアプリケーションは構築出来た
 	- 良心のあるエンジニアになるのは、難しいがその過程は、とてもエキサイティング
-- medibaでは、エキサイティングな経験を通して、一緒に成長出来るエンジニアを募集してます!
+- medibaでは、エキサイティングな経験を通して、[一緒に成長出来るエンジニアを募集してます!](http://www.mediba.jp/recruit/career/joblist.html#engineer)
+
+<div class="notes">
+- コンテナ型仮想化のアプローチを用いて、PHPアプリケーションをTwelve Factor Appにした移管プロジェクトについてお話してきました。
+- 過程での学びや気付きはとても多く、エンジニアとしての成長を実感出来たプロジェクトでした。
+- 学習コストは決して低くなく、現場にもマネジメントにもリスクのあるアプローチでしたが、Twelve Factor Appにするメリットは十分にあると確信を持っています。
+- 課題といいますが、把握できていないことは、運用についてです。つい先日移管を完了したプロジェクトですので、保守運用でどのような課題が存在するのか、どうやって運用を効率化していくのかは、今後ノウハウとして蓄積していきたいと思います。
+- また、昨日対応した問題なのですが、アプリケーション実行環境は、プロセスとして独立し、リビジョン間でもステートレスになりましたが、プロジェクトはステートフル、つまり脈々と培ってきたものがあります。
+	- 具体的な例でいうと、DBに格納されてデータです。ストレージに格納された画像ファイルです。これらの永続化されたデータをストアするサービスをTwelve Factor Appでは、バックエンドサービスと呼びますが、このバックエンドサービスの中身、例えば商用環境のDB内のレコードをダンプし、ステージング環境にインポートするなどして、メンテナンスする必要があります。
+	- 我々のケースでは、これを怠ったばっかりに、データ量の差異による問題に商用リリースを実施してから直面してしまいました。データストア等をバックエンドサービスとしてメンテナンスすることはもちろんですが、そこに格納されているデータをどうメンテナンスしていくかというのは、今後の課題です。
+- アプリケーションをTwelve Factor Appにしてやりたいことはなんでしょう?
+	- やりたいこと、やるべきことは限りなく出てくることでしょう。その際に重要なのは、チームで課題に取り組むことだと思います。
+	- チーム開発に耐えうるアプリケーションとその実行環境は、Twelve Factor Appで用意することが出来ました。強いチームを素早くビルドする環境はあるわけです。
+	- 強いチームには、良心のあるエンジニアが必要です。エンジニアリングで課題を全力で取り組み、解決し、全体最適を図ることが出来ることが出来るエンジニアです。その過程は、生易しいものではありませんがエキサイティングです。
+	- 弊社にも良心のあるエンジニアは多数在籍しておりますが、やりたいこと/やるべきことに対してまだまだ絶対数が足りていないがのが現場の実情です。
+- 我々はそんなエンジニアを通年で募集しております。興味のあるかたはぜひブースにお越し下さい。
+- ご清聴、ありがとうございました。
+</div>
