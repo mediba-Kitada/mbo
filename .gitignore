@@ -8,3 +8,8 @@ Session.vim
 
 # Backup files
 *~
+
+# OS dependent files
+.DS_Store
+Thumbs.db
+Berksfile.lock
