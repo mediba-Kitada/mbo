@@ -1,0 +1,82 @@
+---
+title: "性能試験おコンテナ"
+author: '@mediba-kitada'
+date: "2016年12月15日"
+output:
+  slidy_presentation:
+    incremental: true
+    pandoc_args: [
+      "--from", "markdown+autolink_bare_uris+tex_math_single_backslash-implicit_figures"
+    ]
+    footer: "Copyright (c) 2016, @mediba-kitada"
+    css: ./assets/styles/slidy.css
+---
+
+```{r setup, include=FALSE}
+# セットアップチャンク
+library(knitr)
+opts_knit$set(global.par = TRUE)
+```
+
+## 自己紹介
+
+- [mediba-kitada](https://github.com/mediba-Kitada)
+- サーバサイドエンジニア
+- [auスマートパス](https://pass.auone.jp/non-member)をつくってます
+
+## 移植性と私
+
+- 入社以来6回のシステム移植を担当している
+- EOSLとかシステム増強とか
+- [WEBサービス](https://mant.jp/)の買収とか
+
+## AWSにおける移植性と私
+
+- よっしゃAWSや(EC2を起動して、RDSを起動して...)
+- よっしゃOpsWorksや(CloudFormationを書いて...)
+- よっしゃECSや(CloudFormationを書いて...)
+- 大概のWEBサービスは、ECSとCloudFormationでなんとかなると思ってる
+
+## 性能試験と私
+
+- auブランドのWEBサービスなので、秒間リクエストで性能を担保(取り決める)することが多い
+- リクエスト種別は??
+	- 更新系処理: 500くらい
+	- 参照系処理: 2,000くらい
+
+## 性能試験遍歴
+
+- ab投げときました(ｷﾘｯ
+	- Apache必須
+- JMeterでテスト試験書くで
+	- XML...
+	- 攻撃リソースが結構必要
+- 時代はGatling
+	- 攻撃リソースは、JMeterの五分の一くらいで済む
+	- 試験計画をプログラミング出来る
+
+## 移植性のある性能試験
+
+- [gatling-ocontainer](https://github.com/mediba-Kitada/gatling-ocontainer)
+	- デモンストレーション
+- 直近のプロジェクトで利用していたツールの一部を公開
+- DockerコンテナにGatlingを載せてチームで性能試験
+	- 性能試験の職人化を防ぎたい
+	- 自動化、定型化への第一歩
+
+## 継続的性能試験
+
+- 性能とは、一定条件下でのスペック(TPS)
+	- カタログスペック
+- コンテナに載せることができたので、コンテナ対応のCIサービスが利用出来る
+	- 改修(Pull Request)毎に性能試験
+	- Gaglingのイケてるレポートを関係者で共有
+- → 性能にフォーカスすることで、改修の費用対効果をチームで把握出来る!!
+
+## まとめ
+
+- クラウドなコンピューティングにおいて移植性と性能は重要な要素
+- 移植性大事
+	- 移植性=費用対効果
+- 性能大事
+	- 性能=費用対効果
