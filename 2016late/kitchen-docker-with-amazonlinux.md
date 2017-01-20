@@ -4,7 +4,7 @@
 
 可搬性(ポータビリティ)に立ちふさがる密林、Amazon Linux。担当プロジェクトでもご多分に漏れず、Amazon LinuxをOSとしたシステムを組んでいます。
 chefを用いて構成管理(商用環境は、[OpsWorks](https://aws.amazon.com/jp/opsworks/))、[Test Kitchen](http://kitchen.ci/) + [Serverspec](http://serverspec.org/)でインフラテストしているがOSはCentOS6.7(packerで生成したVagrant box)...OSが違うのに、何が構成管理か、何が可搬性か。  
-[AWS公式のDockerイメージ](https://hub.docker.com/_/amazonlinux/)もリリースされたことですし、Dockerを武器にローカストで可搬性を手に入れることが出来ると思い立ったが吉日。
+[AWS公式のDockerイメージ](https://hub.docker.com/_/amazonlinux/)もリリースされたことですし、Dockerを武器にローコストで可搬性を手に入れることが出来ると思い立ったが吉日。
 1営業日くらいで可搬性のあるインフラテスト環境を手に入れることが出来ました :dragon_face:
 
 ## 変更のサマリ
@@ -16,6 +16,7 @@ chefを用いて構成管理(商用環境は、[OpsWorks](https://aws.amazon.com
 
 主たる変更は、[kitchen-docker](https://github.com/test-kitchen/kitchen-docker)を導入し、Test KitchenのドライバとしてDockerを採用したことです。
 変更により、以下のメリットを享受出来るようになりました。
+
 - __cookbookの統一__
 - __プロビジョニング対象ホストのOSをOpsWorksと合わせることが出来る__
 - __初回テスト時の所要時間の短縮__
@@ -44,15 +45,16 @@ __...だるい__
 
 設計し、実装を終えた当初は、堅牢で素晴らしいワークフローだと思ったものです。
 このケースの課題は
+
 - __cookbook開発のオーバーヘッドが無視できない__
 	- cookbookの見通しが悪い。```_local```って何??
 	- Atlasは、日本の日勤帯の時間は、ネットワーク帯域を絞っているのでboxのダウンロードが激重
-- __attributeでパッケージ名を上書きしている___
+- __attributeでパッケージ名を上書きしている__
 	- OSが異なることが諸悪の根源
 - __学習コストが結構かかる__
 	- chefとServerspecは必要経費だとしても、Test Kitchen、Vagrant、Packer、Atlas.... 
 
-ゴールデンイメージなVagrant boxを中心に添えたワークフローは、堅牢ですがミドルウェアのアップデートのスピードには着いてことが難しいというのが個人的な印象です。
+ゴールデンイメージなVagrant boxを中心に添えたワークフローは、堅牢ですが昨今のミドルウェアのアップデートのスピードには着いていくことが難しいというのが個人的な印象です。
 
 ## アフター
 
@@ -72,6 +74,7 @@ __...だるい__
 
 cookbook開発だけでなく、アプリケーションのローカル開発環境の見直しも併せて行った(Dockerの導入)ので、かなりシンプルはワークフローとなりました。
 メリットをまとめると
+
 - __同一のOSに対してプロビジョニングし、テスト出来る__
 	- AWS公式Dockerイメージに対してプロビジョニングした結果をテスト出来る
 - __コードベースがシンプルになる__
@@ -90,6 +93,7 @@ cookbook開発だけでなく、アプリケーションのローカル開発環
 
 kitchen-dockerというgemが必要になりますので、Gemfileに追記しましょう。
 Kitchen-vagrantは不要となりますので、削除しました。
+
 ```Gemfile
 source "https://rubygems.org"
 
@@ -105,7 +109,7 @@ Gemfileの編集が終わったらbundlerでインストールします。
 bundle install --path ./vendor/bundle
 ```
 
-#### .Kitchen.ymlの編集
+#### .kitchen.ymlの編集
 
 [kitchen-dockerのREADME]()を参考に、Test Kitchenの設定ファイルを編集していきます。
 
